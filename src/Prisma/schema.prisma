@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int             @id @default(autoincrement())
+  name             String
+  email            String          @unique
+  phone            String
+  password         String
+  profileImage     String? // Optional field to store the profile image URL or path
+  addresses        Address[]
+  cart             CartItem[]
+  products         SellerProduct[]
+  wishlist         Wishlist[]
+  category         UserCategory    @default(CONSUMER)
+  consumerPayments Payment[]       @relation("ConsumerPayments")
+  sellerPayments   Payment[]       @relation("SellerPayments")
+}
+
+enum UserCategory {
+  CONSUMER
+  SELLER
+}
+
+model Seller {
+  id            Int           @id @default(autoincrement())
+  fullname      String
+  email         String        @unique
+  mobile        String
+  address       Address       @relation(fields: [addressId], references: [id])
+  experience    String
+  paymentMethod PaymentMethod
+  upiId         String? // Optional field
+  bankDetails   BankDetails? // Optional field
+  addressId     Int
+}
+
+model BankDetails {
+  id            Int    @id @default(autoincrement())
+  name          String
+  accountNumber String
+  ifsc          String
+  bankName      String
+  seller        Seller @relation(fields: [sellerId], references: [id])
+  sellerId      Int    @unique
+}
+
+enum PaymentMethod {
+  UPI
+  Bank
+}
+
+model SellerProduct {
+  id          String     @id @unique
+  name        String
+  age         String
+  price       Float
+  location    String
+  image       String?
+  description String?
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id])
+  cartItems   CartItem[]
+  wishlists   Wishlist[]
+  payments    Payment[]
+}
+
+model CartItem {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  productId String
+  quantity  Int
+  product   SellerProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id])
+}
+
+model Address {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  address String
+  user    User     @relation(fields: [userId], references: [id])
+  Seller  Seller[] @ignore
+}
+
+model Wishlist {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  productId String
+  product   SellerProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id])
+}
+
+model Payment {
+  id               Int           @id @default(autoincrement())
+  consumerUserId   Int
+  sellerUserId     Int
+  productId        String
+  amount           Float
+  status           PaymentStatus @default(PENDING)
+  paymentTimestamp DateTime      @default(now())
+  createdAt        DateTime      @default(now())
+  orderStatus      OrderStatus   @default(PENDING)
+
+  consumer User          @relation("ConsumerPayments", fields: [consumerUserId], references: [id])
+  seller   User          @relation("SellerPayments", fields: [sellerUserId], references: [id])
+  product  SellerProduct @relation(fields: [productId], references: [id])
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  SHIPPED
+}

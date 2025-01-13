@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "start": "DEBUG=app:server node src/index.js"
+  }
+}
